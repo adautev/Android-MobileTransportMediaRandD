@@ -54,7 +54,16 @@ public class MobileTicketIssue extends AppCompatActivity
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
-            super.onBackPressed();
+            Handler handler = new Handler();
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    FragmentManager fragmentManager = getFragmentManager();
+                    fragmentManager.beginTransaction()
+                            .replace(R.id.content_frame, YourTravelCode.newInstance())
+                            .commit();
+                }
+            });
         }
     }
 
@@ -106,11 +115,11 @@ public class MobileTicketIssue extends AppCompatActivity
     }
 
     public void btn_BuyTicket_Click(View view) {
-        ProgressBar pb_buyingTicket = (ProgressBar) findViewById(R.id.pb_buyingTicket);
+        ProgressBar pb_buyingTicket = findViewById(R.id.pb_buyingTicket);
         pb_buyingTicket.setVisibility(View.VISIBLE);
 
         Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
+        handler.post(new Runnable() {
             @Override
             public void run() {
                 FragmentManager fragmentManager = getFragmentManager();
@@ -118,7 +127,7 @@ public class MobileTicketIssue extends AppCompatActivity
                         .replace(R.id.content_frame, YourTravelCode.newInstance())
                         .commit();
             }
-        }, 5000);
+        });
     }
 
     @Override

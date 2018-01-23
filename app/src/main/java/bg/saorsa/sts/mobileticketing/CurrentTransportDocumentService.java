@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.Context;
 import android.os.Handler;
 import android.provider.SyncStateContract;
+import android.support.annotation.NonNull;
 import android.support.v4.content.LocalBroadcastManager;
 
 import java.nio.charset.Charset;
@@ -69,9 +70,10 @@ public class CurrentTransportDocumentService extends IntentService {
         Intent localIntent =
                 new Intent(BROADCAST_ACTION)
                         // Puts the status into the Intent
-                        .putExtra(TRANSPORT_DOCUMENT_RECEIVED_SUCCESSFULLY, transportDocumentPayload);
+                        .putExtra(TRANSPORT_DOCUMENT_RECEIVED_SUCCESSFULLY, "A ticket. :D");
         LocalBroadcastManager.getInstance(this).sendBroadcast(localIntent);
     }
+    @NonNull
     private String getTransportDocument(String documentType) {
         byte[] array = new byte[25]; // length is bounded by 25
         new Random().nextBytes(array);

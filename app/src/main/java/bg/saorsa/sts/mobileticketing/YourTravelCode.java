@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.app.Fragment;
@@ -12,7 +13,25 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
+
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.EncodeHintType;
+import com.google.zxing.MultiFormatWriter;
+import com.google.zxing.WriterException;
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+import com.google.zxing.qrcode.encoder.ByteMatrix;
+import com.google.zxing.qrcode.encoder.Encoder;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.encoder.QRCode;
+
+import java.nio.charset.StandardCharsets;
+import java.util.EnumMap;
+import java.util.Map;
+
+import static android.graphics.Color.BLACK;
+import static android.graphics.Color.WHITE;
 
 
 /**
@@ -43,9 +62,43 @@ public class YourTravelCode extends Fragment {
         fragment.setArguments(args);
         return fragment;
     }
-    public void updateQRCode(String transportDocument) {
-        TextView mobileCodeTextView = (TextView) getView().findViewById(R.id.tv_Mobile_Code);
-        mobileCodeTextView.setText(transportDocument);
+    public void updateQRCode(String transportDocument) throws WriterException {
+        Bitmap bitmap = encodeAsBitmap(transportDocument,BarcodeFormat.QR_CODE, 400, 400);
+        ImageView aztecCodeView = (ImageView) getView().findViewById(R.id.iv_Aztec_Code);
+        aztecCodeView.setImageBitmap(bitmap);
+    }
+    private Bitmap encodeAsBitmap(String contents, BarcodeFormat format, int img_width, int img_height) throws WriterException {
+        String contentsToEncode = contents;
+        if (contentsToEncode == null) {
+            return null;
+        }
+        Map<EncodeHintType, Object> hints = null;
+        hints = new EnumMap<EncodeHintType, Object>(EncodeHintType.class);
+        hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
+        hints.put(EncodeHintType.MARGIN, 0); /* default = 4 */
+        MultiFormatWriter writer = new MultiFormatWriter();
+        BitMatrix result;
+        try {
+            result = writer.encode(contentsToEncode, format, img_width, img_height, hints);
+        } catch (IllegalArgumentException iae) {
+            // Unsupported format
+            return null;
+        }
+
+        int width = result.getWidth();
+        int height = result.getHeight();
+        int[] pixels = new int[width * height];
+        for (int y = 0; y < height; y++) {
+            int offset = y * width;
+            for (int x = 0; x < width; x++) {
+                pixels[offset + x] = result.get(x, y) ? WHITE : BLACK;
+            }
+        }
+
+        Bitmap bitmap = Bitmap.createBitmap(width, height,
+                Bitmap.Config.ARGB_8888);
+        bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
+        return bitmap;
     }
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -58,12 +111,16 @@ public class YourTravelCode extends Fragment {
                 new BroadcastReceiver() {
                   @Override
                   public void onReceive(final Context context, final Intent intent) {
-                        new Handler().postDelayed(new Runnable() {
+                        new Handler().post(new Runnable() {
                             @Override
                             public void run() {
-                                updateQRCode(intent.getStringExtra(CurrentTransportDocumentService.TRANSPORT_DOCUMENT_RECEIVED_SUCCESSFULLY));
+                                try {
+                                    updateQRCode(intent.getStringExtra(CurrentTransportDocumentService.TRANSPORT_DOCUMENT_RECEIVED_SUCCESSFULLY));
+                                } catch (WriterException e) {
+                                    e.printStackTrace();
+                                }
                             }
-                        },1000);
+                        });
                   }
               },
                 new IntentFilter(CurrentTransportDocumentService.BROADCAST_ACTION));
