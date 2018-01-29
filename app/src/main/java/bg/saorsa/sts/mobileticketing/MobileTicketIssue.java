@@ -40,6 +40,16 @@ public class MobileTicketIssue extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+        // Setup handler for uncaught exceptions.
+        Thread.setDefaultUncaughtExceptionHandler (new Thread.UncaughtExceptionHandler()
+        {
+            @Override
+            public void uncaughtException (Thread thread, Throwable e)
+            {
+                e.printStackTrace(); // not all Android versions will print the stack trace automatically
+                System.exit(1); // kill off the crashed app
+            }
+        });
         Fragment fragment = new ByuTicket();
         // Insert the fragment by replacing any existing fragment
         FragmentManager fragmentManager = getFragmentManager();
@@ -60,7 +70,7 @@ public class MobileTicketIssue extends AppCompatActivity
                 public void run() {
                     FragmentManager fragmentManager = getFragmentManager();
                     fragmentManager.beginTransaction()
-                            .replace(R.id.content_frame, YourTravelCode.newInstance())
+                            .replace(R.id.content_frame, new ByuTicket())
                             .commit();
                 }
             });

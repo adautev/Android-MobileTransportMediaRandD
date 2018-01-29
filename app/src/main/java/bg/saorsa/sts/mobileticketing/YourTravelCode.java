@@ -26,7 +26,13 @@ import com.google.zxing.qrcode.encoder.Encoder;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.encoder.QRCode;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -62,10 +68,28 @@ public class YourTravelCode extends Fragment {
         fragment.setArguments(args);
         return fragment;
     }
-    public void updateQRCode(String transportDocument) throws WriterException {
+    public void updateQRCode(String transportDocument) throws WriterException, JSONException, ParseException {
+        JSONObject deserializedTicket = new JSONObject(transportDocument);
+        String i_hate_java_doesnt_have_var = deserializedTicket.getString("valid_to");
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.ss");
+        Date toDate = format.parse(i_hate_java_doesnt_have_var);
+        int timeOut = 10000;
+        //Check that we have at least 30 secs
+        if(toDate.getTime() < System.currentTimeMillis()+10000) {
+            timeOut = 0;
+        }
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                StartTokenService();
+            }
+        }, timeOut);
         Bitmap bitmap = encodeAsBitmap(transportDocument,BarcodeFormat.QR_CODE, 400, 400);
-        ImageView aztecCodeView = (ImageView) getView().findViewById(R.id.iv_Aztec_Code);
-        aztecCodeView.setImageBitmap(bitmap);
+        View view = getView();
+        if (view != null)  {
+            ImageView aztecCodeView = (ImageView) view.findViewById(R.id.iv_Aztec_Code);
+            aztecCodeView.setImageBitmap(bitmap);
+        }
     }
     private Bitmap encodeAsBitmap(String contents, BarcodeFormat format, int img_width, int img_height) throws WriterException {
         String contentsToEncode = contents;
@@ -74,8 +98,9 @@ public class YourTravelCode extends Fragment {
         }
         Map<EncodeHintType, Object> hints = null;
         hints = new EnumMap<EncodeHintType, Object>(EncodeHintType.class);
-        hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
-        hints.put(EncodeHintType.MARGIN, 0); /* default = 4 */
+        hints.put(EncodeHintType.ERROR_CORRECTION, "M");
+        hints.put(EncodeHintType.MARGIN, 4); /* default = 4 */
+        hints.put(EncodeHintType.PDF417_COMPACT, "true"); /* default = 4 */
         MultiFormatWriter writer = new MultiFormatWriter();
         BitMatrix result;
         try {
@@ -91,7 +116,7 @@ public class YourTravelCode extends Fragment {
         for (int y = 0; y < height; y++) {
             int offset = y * width;
             for (int x = 0; x < width; x++) {
-                pixels[offset + x] = result.get(x, y) ? WHITE : BLACK;
+                pixels[offset + x] = result.get(x, y) ? BLACK : WHITE;
             }
         }
 
@@ -103,8 +128,15 @@ public class YourTravelCode extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        StartTokenService();
+
+
+    }
+
+    private void StartTokenService() {
         Intent currentTransportDocumentService = new Intent(getActivity(), CurrentTransportDocumentService.class);
-        currentTransportDocumentService.putExtra(CurrentTransportDocumentService.EXTRA_DOCUMENT_TYPE, CurrentTransportDocumentService.DOCUMENT_TYPE_MONTHLY_CARD_FULL);
+        currentTransportDocumentService.putExtra(CurrentTransportDocumentService.EXTRA_DOCUMENT_TYPE, "x");
+        currentTransportDocumentService.putExtra(CurrentTransportDocumentService.EXTRA_CONSUMER_ID, "x");
         currentTransportDocumentService.setAction(CurrentTransportDocumentService.ACTION_START_DOCUMENT_PROPAGATION);
 
         LocalBroadcastManager.getInstance(getActivity()).registerReceiver(
@@ -115,8 +147,16 @@ public class YourTravelCode extends Fragment {
                             @Override
                             public void run() {
                                 try {
-                                    updateQRCode(intent.getStringExtra(CurrentTransportDocumentService.TRANSPORT_DOCUMENT_RECEIVED_SUCCESSFULLY));
+                                    if(intent.hasExtra(CurrentTransportDocumentService.UNABLE_TO_RETREIVE_TOKEN)) {
+                                        //Think how to handle this
+                                    } else {
+                                        updateQRCode(intent.getStringExtra(CurrentTransportDocumentService.TRANSPORT_DOCUMENT_RECEIVED_SUCCESSFULLY));
+                                    }
                                 } catch (WriterException e) {
+                                    e.printStackTrace();
+                                } catch (ParseException e) {
+                                    e.printStackTrace();
+                                } catch (JSONException e) {
                                     e.printStackTrace();
                                 }
                             }
@@ -125,8 +165,6 @@ public class YourTravelCode extends Fragment {
               },
                 new IntentFilter(CurrentTransportDocumentService.BROADCAST_ACTION));
         getActivity().startService(currentTransportDocumentService);
-
-
     }
 
 
