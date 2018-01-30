@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.app.Fragment;
@@ -68,11 +69,7 @@ public class YourTravelCode extends Fragment {
         fragment.setArguments(args);
         return fragment;
     }
-    public void updateQRCode(String transportDocument) throws WriterException, JSONException, ParseException {
-        JSONObject deserializedTicket = new JSONObject(transportDocument);
-        String i_hate_java_doesnt_have_var = deserializedTicket.getString("valid_to");
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.ss");
-        Date toDate = format.parse(i_hate_java_doesnt_have_var);
+    public void updateQRCode(byte[] transportDocument) throws WriterException, JSONException, ParseException {
 
         new Handler().postDelayed(new Runnable() {
             @Override
@@ -84,47 +81,13 @@ public class YourTravelCode extends Fragment {
                 }
             }
         }, 5000);
-        Bitmap bitmap = encodeAsBitmap(transportDocument,BarcodeFormat.QR_CODE, 400, 400);
         View view = getView();
         if (view != null)  {
             ImageView aztecCodeView = (ImageView) view.findViewById(R.id.iv_Aztec_Code);
-            aztecCodeView.setImageBitmap(bitmap);
+            aztecCodeView.setImageBitmap(BitmapFactory.decodeByteArray(transportDocument, 0 , transportDocument.length));
         }
     }
-    private Bitmap encodeAsBitmap(String contents, BarcodeFormat format, int img_width, int img_height) throws WriterException {
-        String contentsToEncode = contents;
-        if (contentsToEncode == null) {
-            return null;
-        }
-        Map<EncodeHintType, Object> hints = null;
-        hints = new EnumMap<EncodeHintType, Object>(EncodeHintType.class);
-        hints.put(EncodeHintType.ERROR_CORRECTION, "M");
-        hints.put(EncodeHintType.MARGIN, 4); /* default = 4 */
-        hints.put(EncodeHintType.PDF417_COMPACT, "true"); /* default = 4 */
-        MultiFormatWriter writer = new MultiFormatWriter();
-        BitMatrix result;
-        try {
-            result = writer.encode(contentsToEncode, format, img_width, img_height, hints);
-        } catch (IllegalArgumentException iae) {
-            // Unsupported format
-            return null;
-        }
 
-        int width = result.getWidth();
-        int height = result.getHeight();
-        int[] pixels = new int[width * height];
-        for (int y = 0; y < height; y++) {
-            int offset = y * width;
-            for (int x = 0; x < width; x++) {
-                pixels[offset + x] = result.get(x, y) ? BLACK : WHITE;
-            }
-        }
-
-        Bitmap bitmap = Bitmap.createBitmap(width, height,
-                Bitmap.Config.ARGB_8888);
-        bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
-        return bitmap;
-    }
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -151,7 +114,7 @@ public class YourTravelCode extends Fragment {
                                         if (intent.hasExtra(CurrentTransportDocumentService.UNABLE_TO_RETREIVE_TOKEN)) {
                                             //Think how to handle this
                                         } else {
-                                            updateQRCode(intent.getStringExtra(CurrentTransportDocumentService.TRANSPORT_DOCUMENT_RECEIVED_SUCCESSFULLY));
+                                            updateQRCode(intent.getByteArrayExtra(CurrentTransportDocumentService.TRANSPORT_DOCUMENT_RECEIVED_SUCCESSFULLY));
                                         }
                                     } catch (WriterException e) {
                                         e.printStackTrace();

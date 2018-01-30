@@ -3,15 +3,23 @@ package bg.saorsa.sts.mobileticketing;
 import android.app.IntentService;
 import android.content.Intent;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.os.Handler;
 import android.provider.SyncStateContract;
 import android.support.annotation.NonNull;
 import android.support.v4.content.LocalBroadcastManager;
 
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.EncodeHintType;
+import com.google.zxing.MultiFormatWriter;
+import com.google.zxing.WriterException;
+import com.google.zxing.common.BitMatrix;
+
 import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -19,9 +27,14 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Random;
 
 import javax.net.ssl.HttpsURLConnection;
+
+import static android.graphics.Color.BLACK;
+import static android.graphics.Color.WHITE;
 
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in
@@ -74,6 +87,8 @@ public class CurrentTransportDocumentService extends IntentService {
                     startDocumentPropagation(documentType, consumerId);
                 } catch (IOException e) {
                     e.printStackTrace();
+                } catch (WriterException e) {
+                    e.printStackTrace();
                 }
             }
         }
@@ -83,7 +98,7 @@ public class CurrentTransportDocumentService extends IntentService {
      * Handle action Foo in the provided background thread with the provided
      * parameters.
      */
-    private void startDocumentPropagation(String documentType, String consumerId) throws IOException {
+    private void startDocumentPropagation(String documentType, String consumerId) throws IOException, WriterException {
         String outcome = TRANSPORT_DOCUMENT_RECEIVED_SUCCESSFULLY;
         String outcomeInformation = "";
         try {
@@ -119,11 +134,50 @@ public class CurrentTransportDocumentService extends IntentService {
         if(outcome != UNABLE_TO_RETREIVE_TOKEN) {
             String transportDocumentPayload = getTransportDocument(documentType);
         }
+        Bitmap bitmap = encodeAsBitmap(outcomeInformation,BarcodeFormat.QR_CODE, 400, 400);
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+        byte[] byteArray = stream.toByteArray();
         Intent localIntent =
                 new Intent(BROADCAST_ACTION)
                         // Puts the status into the Intent
-                        .putExtra(outcome, outcomeInformation);
+                        .putExtra(outcome, byteArray);
+        localIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent. FLAG_INCLUDE_STOPPED_PACKAGES);
         LocalBroadcastManager.getInstance(this).sendBroadcast(localIntent);
+    }
+    private Bitmap encodeAsBitmap(String contents, BarcodeFormat format, int img_width, int img_height) throws WriterException {
+        String contentsToEncode = contents;
+        if (contentsToEncode == null) {
+            return null;
+        }
+        Map<EncodeHintType, Object> hints = null;
+        hints = new EnumMap<EncodeHintType, Object>(EncodeHintType.class);
+        hints.put(EncodeHintType.ERROR_CORRECTION, "M");
+        hints.put(EncodeHintType.MARGIN, 4); /* default = 4 */
+        hints.put(EncodeHintType.PDF417_COMPACT, "true"); /* default = 4 */
+        MultiFormatWriter writer = new MultiFormatWriter();
+        BitMatrix result;
+        try {
+            result = writer.encode(contentsToEncode, format, img_width, img_height, hints);
+        } catch (IllegalArgumentException iae) {
+            // Unsupported format
+            return null;
+        }
+
+        int width = result.getWidth();
+        int height = result.getHeight();
+        int[] pixels = new int[width * height];
+        for (int y = 0; y < height; y++) {
+            int offset = y * width;
+            for (int x = 0; x < width; x++) {
+                pixels[offset + x] = result.get(x, y) ? BLACK : WHITE;
+            }
+        }
+
+        Bitmap bitmap = Bitmap.createBitmap(width, height,
+                Bitmap.Config.ARGB_8888);
+        bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
+        return bitmap;
     }
     @NonNull
     private String getTransportDocument(String documentType) {
