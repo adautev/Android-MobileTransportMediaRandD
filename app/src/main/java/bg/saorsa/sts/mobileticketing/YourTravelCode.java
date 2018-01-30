@@ -73,11 +73,7 @@ public class YourTravelCode extends Fragment {
         String i_hate_java_doesnt_have_var = deserializedTicket.getString("valid_to");
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.ss");
         Date toDate = format.parse(i_hate_java_doesnt_have_var);
-        int timeOut = 10000;
-        //Check that we have at least 30 secs
-        if(toDate.getTime() < System.currentTimeMillis()+10000) {
-            timeOut = 0;
-        }
+
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -87,7 +83,7 @@ public class YourTravelCode extends Fragment {
                     ex.printStackTrace();
                 }
             }
-        }, timeOut);
+        }, 5000);
         Bitmap bitmap = encodeAsBitmap(transportDocument,BarcodeFormat.QR_CODE, 400, 400);
         View view = getView();
         if (view != null)  {

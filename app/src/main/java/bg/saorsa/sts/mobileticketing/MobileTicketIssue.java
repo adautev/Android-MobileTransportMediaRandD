@@ -31,13 +31,13 @@ public class MobileTicketIssue extends AppCompatActivity
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
         // Setup handler for uncaught exceptions.
         Thread.setDefaultUncaughtExceptionHandler (new Thread.UncaughtExceptionHandler()
@@ -49,6 +49,10 @@ public class MobileTicketIssue extends AppCompatActivity
                 System.exit(1); // kill off the crashed app
             }
         });
+        SetBuyTicketFragment();
+    }
+
+    private void SetBuyTicketFragment() {
         Fragment fragment = new ByuTicketFragment();
         // Insert the fragment by replacing any existing fragment
         FragmentManager fragmentManager = getFragmentManager();
@@ -72,6 +76,12 @@ public class MobileTicketIssue extends AppCompatActivity
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.mobile_ticket_issue, menu);
         return true;
+    }
+
+    @Override
+    public void onResume(){
+        super.onResume();
+        SetBuyTicketFragment();
     }
 
     @Override
