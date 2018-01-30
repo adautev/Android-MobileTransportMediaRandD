@@ -1,11 +1,8 @@
 package bg.saorsa.sts.mobileticketing;
 
-import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.view.View;
@@ -19,10 +16,12 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ProgressBar;
 
+import java.util.List;
+
 public class MobileTicketIssue extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
         YourTravelCode.onTravelCodeUpdateListener,
-        ByuTicket.OnFragmentInteractionListener {
+        ByuTicketFragment.OnFragmentInteractionListener {
 
 
     @Override
@@ -50,7 +49,7 @@ public class MobileTicketIssue extends AppCompatActivity
                 System.exit(1); // kill off the crashed app
             }
         });
-        Fragment fragment = new ByuTicket();
+        Fragment fragment = new ByuTicketFragment();
         // Insert the fragment by replacing any existing fragment
         FragmentManager fragmentManager = getFragmentManager();
         fragmentManager.beginTransaction()
@@ -64,16 +63,7 @@ public class MobileTicketIssue extends AppCompatActivity
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
-            Handler handler = new Handler();
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    FragmentManager fragmentManager = getFragmentManager();
-                    fragmentManager.beginTransaction()
-                            .replace(R.id.content_frame, new ByuTicket())
-                            .commit();
-                }
-            });
+            super.onBackPressed();
         }
     }
 
@@ -134,6 +124,7 @@ public class MobileTicketIssue extends AppCompatActivity
             public void run() {
                 FragmentManager fragmentManager = getFragmentManager();
                 fragmentManager.beginTransaction()
+                        .addToBackStack("fragment_your_travel_code")
                         .replace(R.id.content_frame, YourTravelCode.newInstance())
                         .commit();
             }

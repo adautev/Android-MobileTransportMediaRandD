@@ -81,7 +81,11 @@ public class YourTravelCode extends Fragment {
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-                StartTokenService();
+                try {
+                    StartTokenService();
+                } catch (NullPointerException ex) {
+                    ex.printStackTrace();
+                }
             }
         }, timeOut);
         Bitmap bitmap = encodeAsBitmap(transportDocument,BarcodeFormat.QR_CODE, 400, 400);
@@ -134,37 +138,41 @@ public class YourTravelCode extends Fragment {
     }
 
     private void StartTokenService() {
-        Intent currentTransportDocumentService = new Intent(getActivity(), CurrentTransportDocumentService.class);
-        currentTransportDocumentService.putExtra(CurrentTransportDocumentService.EXTRA_DOCUMENT_TYPE, "x");
-        currentTransportDocumentService.putExtra(CurrentTransportDocumentService.EXTRA_CONSUMER_ID, "x");
-        currentTransportDocumentService.setAction(CurrentTransportDocumentService.ACTION_START_DOCUMENT_PROPAGATION);
+        try {
+            Intent currentTransportDocumentService = new Intent(getActivity(), CurrentTransportDocumentService.class);
+            currentTransportDocumentService.putExtra(CurrentTransportDocumentService.EXTRA_DOCUMENT_TYPE, "x");
+            currentTransportDocumentService.putExtra(CurrentTransportDocumentService.EXTRA_CONSUMER_ID, "x");
+            currentTransportDocumentService.setAction(CurrentTransportDocumentService.ACTION_START_DOCUMENT_PROPAGATION);
 
-        LocalBroadcastManager.getInstance(getActivity()).registerReceiver(
-                new BroadcastReceiver() {
-                  @Override
-                  public void onReceive(final Context context, final Intent intent) {
-                        new Handler().post(new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    if(intent.hasExtra(CurrentTransportDocumentService.UNABLE_TO_RETREIVE_TOKEN)) {
-                                        //Think how to handle this
-                                    } else {
-                                        updateQRCode(intent.getStringExtra(CurrentTransportDocumentService.TRANSPORT_DOCUMENT_RECEIVED_SUCCESSFULLY));
+            LocalBroadcastManager.getInstance(getActivity()).registerReceiver(
+                    new BroadcastReceiver() {
+                        @Override
+                        public void onReceive(final Context context, final Intent intent) {
+                            new Handler().post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        if (intent.hasExtra(CurrentTransportDocumentService.UNABLE_TO_RETREIVE_TOKEN)) {
+                                            //Think how to handle this
+                                        } else {
+                                            updateQRCode(intent.getStringExtra(CurrentTransportDocumentService.TRANSPORT_DOCUMENT_RECEIVED_SUCCESSFULLY));
+                                        }
+                                    } catch (WriterException e) {
+                                        e.printStackTrace();
+                                    } catch (ParseException e) {
+                                        e.printStackTrace();
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
                                     }
-                                } catch (WriterException e) {
-                                    e.printStackTrace();
-                                } catch (ParseException e) {
-                                    e.printStackTrace();
-                                } catch (JSONException e) {
-                                    e.printStackTrace();
                                 }
-                            }
-                        });
-                  }
-              },
-                new IntentFilter(CurrentTransportDocumentService.BROADCAST_ACTION));
-        getActivity().startService(currentTransportDocumentService);
+                            });
+                        }
+                    },
+                    new IntentFilter(CurrentTransportDocumentService.BROADCAST_ACTION));
+            getActivity().startService(currentTransportDocumentService);
+        } catch (NullPointerException ex) {
+            ex.printStackTrace();
+        }
     }
 
 

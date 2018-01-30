@@ -1,10 +1,8 @@
 package bg.saorsa.sts.mobileticketing;
 
 import android.content.Context;
-import android.content.IntentFilter;
 import android.os.Bundle;
 import android.app.Fragment;
-import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,12 +11,12 @@ import android.view.ViewGroup;
 /**
  * A simple {@link Fragment} subclass.
  * Activities that contain this fragment must implement the
- * {@link ByuTicket.OnFragmentInteractionListener} interface
+ * {@link ByuTicketFragment.OnFragmentInteractionListener} interface
  * to handle interaction events.
- * Use the {@link ByuTicket#newInstance} factory method to
+ * Use the {@link ByuTicketFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class ByuTicket extends Fragment {
+public class ByuTicketFragment extends Fragment {
     private OnFragmentInteractionListener onFragmentInteractionListener;
 
     /**
@@ -26,11 +24,11 @@ public class ByuTicket extends Fragment {
      * this fragment using the provided parameters.
      *
 
-     * @return A new instance of fragment ByuTicket.
+     * @return A new instance of fragment ByuTicketFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static ByuTicket newInstance() {
-        ByuTicket fragment = new ByuTicket();
+    public static ByuTicketFragment newInstance() {
+        ByuTicketFragment fragment = new ByuTicketFragment();
         Bundle args = new Bundle();
         fragment.setArguments(args);
         return fragment;
