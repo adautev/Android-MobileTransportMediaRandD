@@ -36,43 +36,19 @@ import javax.net.ssl.HttpsURLConnection;
 import static android.graphics.Color.BLACK;
 import static android.graphics.Color.WHITE;
 
-/**
- * An {@link IntentService} subclass for handling asynchronous task requests in
- * a service on a separate handler thread.
- * <p>
- * TODO: Customize class - update intent actions, extra parameters and static
- * helper methods.
- */
 public class CurrentTransportDocumentService extends IntentService {
-    // TODO: Rename actions, choose action names that describe tasks that this
     public static final String ACTION_START_DOCUMENT_PROPAGATION = "bg.saorsa.sts.mobileticketing.action.START_DOCUMENT_PROPAGATION";
 
     // Extra parameters
-    public static final String DOCUMENT_TYPE_MONTHLY_CARD_FULL = "bg.saorsa.sts.mobileticketing.extra.DOCUMENT_TYPE_MONTHLY_CARD_FULL";
     public static final String EXTRA_DOCUMENT_TYPE = "bg.saorsa.sts.mobileticketing.extra.EXTRA_DOCUMENT_TYPE";
     public static final String EXTRA_CONSUMER_ID = "bg.saorsa.sts.mobileticketing.extra.EXTRA_CONSUMER_ID";
     //Fragment communication
     public static final String BROADCAST_ACTION = "bg.saorsa.sts.mobileticketing.extra.BROADCAST_ACTION";
     public static final String TRANSPORT_DOCUMENT_RECEIVED_SUCCESSFULLY = "bg.saorsa.sts.mobileticketing.extra.TRANSPORT_DOCUMENT_RECEIVED_SUCCESSFULLY";
-    public static final String TRANSPORT_DOCUMENT_ALREADY_USED = "bg.saorsa.sts.mobileticketing.extra.TRANSPORT_DOCUMENT_ALREADY_USED";
     public static final String UNABLE_TO_RETREIVE_TOKEN = "bg.saorsa.sts.mobileticketing.extra.UNABLE_TO_RETREIVE_TOKEN";
 
     public CurrentTransportDocumentService() {
         super("CurrentTransportDocumentService");
-    }
-
-    /**
-     * Starts this service to perform action Foo with the given parameters. If
-     * the service is already performing a task this action will be queued.
-     *
-     * @see IntentService
-     */
-    // TODO: Customize helper method
-    public static void startTransportDocumentPropagation(Context context, String transportDocumentType) {
-        Intent intent = new Intent(context, CurrentTransportDocumentService.class);
-        intent.setAction(ACTION_START_DOCUMENT_PROPAGATION);
-        intent.putExtra(DOCUMENT_TYPE_MONTHLY_CARD_FULL, transportDocumentType);
-        context.startService(intent);
     }
 
 
@@ -102,37 +78,20 @@ public class CurrentTransportDocumentService extends IntentService {
         String outcome = TRANSPORT_DOCUMENT_RECEIVED_SUCCESSFULLY;
         String outcomeInformation = "";
         try {
-            URL tokenEndpoint = new URL("http://cloud.dialogical.bg:8084/token/"+ documentType + "/" + consumerId);
-            // Create connection
-            HttpURLConnection urlConnection =
-                    (HttpURLConnection) tokenEndpoint.openConnection();
-                urlConnection.setReadTimeout(5000);
-                urlConnection.setRequestMethod("GET");
-            try {
-                InputStream in = new BufferedInputStream(urlConnection.getInputStream());
-
-                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-                StringBuilder result = new StringBuilder();
-                String line;
-                while((line = reader.readLine()) != null) {
-                    result.append(line);
-                }
-                outcomeInformation = result.toString();
-                
-            } catch (Exception ex) {
-                String message = ex.getMessage();
-                message = "ds";
-            }
-            finally {
-                    urlConnection.disconnect();
-            }
+            outcomeInformation = getTransportDocumentToken(documentType, consumerId, outcomeInformation);
 
         } catch (Exception ex) {
             outcome = UNABLE_TO_RETREIVE_TOKEN;
             outcomeInformation = ex.getMessage();
         }
         if(outcome != UNABLE_TO_RETREIVE_TOKEN) {
-            String transportDocumentPayload = getTransportDocument(documentType);
+            Intent localIntent =
+                    new Intent(BROADCAST_ACTION)
+                            // Puts the status into the Intent
+                            .putExtra(UNABLE_TO_RETREIVE_TOKEN, true);
+            localIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent. FLAG_INCLUDE_STOPPED_PACKAGES);
+            LocalBroadcastManager.getInstance(this).sendBroadcast(localIntent);
+            return;
         }
         Bitmap bitmap = encodeAsBitmap(outcomeInformation,BarcodeFormat.QR_CODE, 400, 400);
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
@@ -145,13 +104,42 @@ public class CurrentTransportDocumentService extends IntentService {
         localIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent. FLAG_INCLUDE_STOPPED_PACKAGES);
         LocalBroadcastManager.getInstance(this).sendBroadcast(localIntent);
     }
+
+    private String getTransportDocumentToken(String documentType, String consumerId, String outcomeInformation) throws IOException {
+        URL tokenEndpoint = new URL("http://cloud.dialogical.bg:8084/token/"+ documentType + "/" + consumerId);
+        // Create connection
+        HttpURLConnection urlConnection =
+                (HttpURLConnection) tokenEndpoint.openConnection();
+        urlConnection.setReadTimeout(5000);
+        urlConnection.setRequestMethod("GET");
+        try {
+            InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+            StringBuilder result = new StringBuilder();
+            String line;
+            while((line = reader.readLine()) != null) {
+                result.append(line);
+            }
+            outcomeInformation = result.toString();
+
+        } catch (Exception ex) {
+            String message = ex.getMessage();
+            message = "ds";
+        }
+        finally {
+                urlConnection.disconnect();
+        }
+        return outcomeInformation;
+    }
+
     private Bitmap encodeAsBitmap(String contents, BarcodeFormat format, int img_width, int img_height) throws WriterException {
         String contentsToEncode = contents;
         if (contentsToEncode == null) {
             return null;
         }
         Map<EncodeHintType, Object> hints = null;
-        hints = new EnumMap<EncodeHintType, Object>(EncodeHintType.class);
+        hints = new EnumMap<>(EncodeHintType.class);
         hints.put(EncodeHintType.ERROR_CORRECTION, "M");
         hints.put(EncodeHintType.MARGIN, 4); /* default = 4 */
         hints.put(EncodeHintType.PDF417_COMPACT, "true"); /* default = 4 */
@@ -178,12 +166,6 @@ public class CurrentTransportDocumentService extends IntentService {
                 Bitmap.Config.ARGB_8888);
         bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
         return bitmap;
-    }
-    @NonNull
-    private String getTransportDocument(String documentType) {
-        byte[] array = new byte[25]; // length is bounded by 25
-        new Random().nextBytes(array);
-        return new String(array, Charset.forName("UTF-8"));
     }
 
 }

@@ -1,44 +1,25 @@
 package bg.saorsa.sts.mobileticketing;
 
+import android.app.Fragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
-import android.app.Fragment;
 import android.os.Handler;
 import android.support.v4.content.LocalBroadcastManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.TextView;
 
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.EncodeHintType;
-import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
-import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
-import com.google.zxing.qrcode.encoder.ByteMatrix;
-import com.google.zxing.qrcode.encoder.Encoder;
-import com.google.zxing.common.BitMatrix;
-import com.google.zxing.qrcode.encoder.QRCode;
 
 import org.json.JSONException;
-import org.json.JSONObject;
 
-import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.EnumMap;
-import java.util.Map;
-
-import static android.graphics.Color.BLACK;
-import static android.graphics.Color.WHITE;
 
 
 /**
@@ -83,7 +64,7 @@ public class YourTravelCode extends Fragment {
         }, 5000);
         View view = getView();
         if (view != null)  {
-            ImageView aztecCodeView = (ImageView) view.findViewById(R.id.iv_Aztec_Code);
+            ImageView aztecCodeView = view.findViewById(R.id.iv_Aztec_Code);
             aztecCodeView.setImageBitmap(BitmapFactory.decodeByteArray(transportDocument, 0 , transportDocument.length));
         }
     }
